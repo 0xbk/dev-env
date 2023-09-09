@@ -19,16 +19,16 @@ jobs:
       - name: Install guest additions plugin
         run: vagrant plugin install vagrant-vbguest
 
+      - name: Cache box
+        uses: actions/cache@v3
+        with:
+          path: package.box
+
       - name: Create virtual machine
         run: vagrant up
 
       - name: Package virtual machine into box
         run: vagrant package --vagrantfile Vagrantfile.package
-
-      - name: Cache box
-        uses: actions/cache@v3
-        with:
-          path: package.box
 
       - name: Create box in cloud
         shell: bash
