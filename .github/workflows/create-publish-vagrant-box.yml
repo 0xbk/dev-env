@@ -21,6 +21,7 @@ jobs:
 
       - name: Cache box
         uses: actions/cache@v3
+        key: box
         with:
           path: package.box
 
