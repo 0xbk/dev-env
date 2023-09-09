@@ -21,8 +21,8 @@ jobs:
 
       - name: Cache box
         uses: actions/cache@v3
-        key: box
         with:
+          key: box
           path: package.box
 
       - name: Create virtual machine
