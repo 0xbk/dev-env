@@ -1,0 +1,169 @@
+name: Create & Publish Vagrant Box
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    branches: [ main ]
+jobs:
+  create-vagrant-box:
+    name: Create & Publish Vagrant Box
+    runs-on: self-hosted
+    env:
+      VAGRANT_CLOUD_TOKEN: ${{ secrets.VAGRANT_CLOUD_TOKEN }}
+      VAGRANT_CLOUD_USER: 0xbk
+      VAGRANT_BOX_NAME: dev-env
+      VAGRANT_BOX_PROVIDER: virtualbox
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install guest additions plugin
+        run: vagrant plugin install vagrant-vbguest
+
+      - name: Create virtual machine
+        run: vagrant up
+
+      - name: Package virtual machine into box
+        run: vagrant package --vagrantfile Vagrantfile.package
+
+      - name: Create box in cloud
+        shell: bash
+        run: |
+          curl \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --header "Authorization: Bearer $VAGRANT_CLOUD_TOKEN" \
+            https://app.vagrantup.com/api/v1/boxes \
+            --data '
+              {
+                "box": {
+                  "username": "'"$VAGRANT_CLOUD_USER"'",
+                  "name": "'"$VAGRANT_BOX_NAME"'",
+                  "short_description": "My development environment.",
+                  "is_private": false
+                }
+              }
+            '
+        if: github.event_name != 'pull_request'
+
+      - name: Delete all but last version
+        shell: bash
+        run: |
+          curl \
+            --request GET \
+            --header "Authorization: Bearer $VAGRANT_CLOUD_TOKEN" \
+            https://app.vagrantup.com/api/v1/box/$VAGRANT_CLOUD_USER/$VAGRANT_BOX_NAME | \
+          jq 'del(.versions[0])' | \
+          jq .versions[].version | \
+          sed 's/"//g' | \
+          xargs -I {} curl \
+            --request DELETE \
+            --header "Authorization: Bearer $VAGRANT_CLOUD_TOKEN" \
+            https://app.vagrantup.com/api/v1/box/$VAGRANT_CLOUD_USER/$VAGRANT_BOX_NAME/version/{}
+        if: github.event_name != 'pull_request'
+
+      - name: Generate version
+        id: generate_version
+        uses: alexvingg/next-release-tag@v1.0.4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+        if: github.event_name != 'pull_request'
+
+      - name: Create box version in cloud
+        shell: bash
+        env:
+          VERSION_TAG: ${{ steps.generate_version.outputs.release_tag }}.0
+        run: |
+          VAGRANT_BOX_VERSION=$( echo $VERSION_TAG | sed 's/^v//' )
+          curl \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --header "Authorization: Bearer $VAGRANT_CLOUD_TOKEN" \
+            https://app.vagrantup.com/api/v1/box/$VAGRANT_CLOUD_USER/$VAGRANT_BOX_NAME/versions \
+            --data '
+              {
+                "version": {
+                  "version": "'"$VAGRANT_BOX_VERSION"'",
+                  "description": "My development environment. See [my GitHub repository](https://github.com/0xbk/'"$VAGRANT_BOX_NAME"') for more info."
+                }
+              }
+            '
+          echo "VERSION_TAG=$VERSION_TAG" >> "$GITHUB_ENV"
+          echo "VAGRANT_BOX_VERSION=$VAGRANT_BOX_VERSION" >> "$GITHUB_ENV"
+        if: github.event_name != 'pull_request'
+
+      - name: Create virtualbox provider in cloud
+        shell: bash
+        run: |
+          curl \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --header "Authorization: Bearer $VAGRANT_CLOUD_TOKEN" \
+            https://app.vagrantup.com/api/v1/box/$VAGRANT_CLOUD_USER/$VAGRANT_BOX_NAME/version/$VAGRANT_BOX_VERSION/providers \
+            --data '
+              {
+                "provider": {
+                  "name": "'"$VAGRANT_BOX_PROVIDER"'",
+                  "checksum": "'"$( sha256sum package.box | cut -d ' ' -f 1 )"'",
+                  "checksum_type": "sha256"
+                }
+              }
+            '
+        if: github.event_name != 'pull_request'
+
+      - name: Upload box to cloud
+        shell: bash
+        run: |
+          echo --url $( \
+            curl \
+              --request GET \
+              --header "Authorization: Bearer $VAGRANT_CLOUD_TOKEN" \
+              https://app.vagrantup.com/api/v1/box/$VAGRANT_CLOUD_USER/$VAGRANT_BOX_NAME/version/$VAGRANT_BOX_VERSION/provider/$VAGRANT_BOX_PROVIDER/upload | \
+            jq .upload_path ) | \
+          curl --request PUT --config - --upload-file package.box
+        if: github.event_name != 'pull_request'
+
+      - name: Release box in cloud
+        shell: bash
+        run: |
+          curl \
+            --request PUT \
+            --header "Authorization: Bearer $VAGRANT_CLOUD_TOKEN" \
+            https://app.vagrantup.com/api/v1/box/$VAGRANT_CLOUD_USER/$VAGRANT_BOX_NAME/version/$VAGRANT_BOX_VERSION/release
+        if: github.event_name != 'pull_request'
+
+      - name: Create tag
+        run: git tag ${{ env.VERSION_TAG }}
+        if: github.event_name != 'pull_request'
+
+      - name: Build changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configurationJson: |
+            {
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["feature"]
+                },
+                {
+                  "title": "## 🐛 Fixes",
+                  "labels": ["fix"]
+                }
+              ]
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: github.event_name != 'pull_request'
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ${{steps.build_changelog.outputs.changelog}}
+          tag_name: ${{ env.VERSION_TAG }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+        if: github.event_name != 'pull_request'
+
+      - name: Destroy virtual machine
+        run: vagrant destroy --force
