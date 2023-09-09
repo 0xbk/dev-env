@@ -111,7 +111,9 @@ jobs:
       #   if: github.event_name != 'pull_request'
 
       - name: Upload box to cloud
-        shell: bash
+        shell: bashcreate a VM from this release
+        env:
+          VAGRANT_BOX_VERSION: 0.1.1
         run: |
           echo --url $( \
             curl \
