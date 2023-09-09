@@ -115,6 +115,7 @@ jobs:
         env:
           VAGRANT_BOX_VERSION: 0.1.1
         run: |
+          touch package.box
           echo --url $( \
             curl \
               --request GET \
