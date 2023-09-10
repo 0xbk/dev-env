@@ -31,19 +31,6 @@ Vagrant.configure("2") do |config|
   SHELL
 
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
-    # Install vscode extensions
-    # General extensions
-    code --install-extension ginfuru.ginfuru-better-solarized-dark-theme
-    code --install-extension vscodevim.vim
-    # Languages
-    code --install-extension ms-python.python
-    code --install-extension yzhang.markdown-all-in-one
-    # Formatters
-    code --install-extension esbenp.prettier-vscode
-    # Linters
-    code --install-extension dbaeumer.vscode-eslint
-    code --install-extension SonarSource.sonarlint-vscode
-
     # Install nvm & node
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
     . ~/.nvm/nvm.sh
