@@ -21,6 +21,8 @@ The versions listed are what I use and know work. Older or newer versions may wo
 Open a Git Bash terminal and run the following commands:
 
 ```bash
+# Create a directory
+mkdir dev-env && cd dev-env
 # Initialize the environment
 vagrant init 0xbk/dev-env
 # Create the VM
@@ -31,7 +33,7 @@ The first time the `vagrant up` command is run it may take a while to download t
 
 ## Workflow
 
-The workflow creates and publishes the vagrant box to [HashiCorp's Vagrant Cloud](https://app.vagrantup.com/0xbk/boxes/dev-env) using a self-hosted runner. Configuration of the runner on your local machine is done with the following steps:
+The workflow creates and publishes the vagrant box to [Vagrant Cloud](https://app.vagrantup.com/0xbk/boxes/dev-env) using a self-hosted runner. Configuration of the runner on your local machine is done with the following steps:
 
 1. Ensure all [Requirements](#requirements) have been installed.
 1. Add the Git Bash `bin` directory as the __first entry__ to the __system environment variable__ named  `Path`.
