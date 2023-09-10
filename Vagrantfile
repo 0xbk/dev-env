@@ -26,8 +26,13 @@ Vagrant.configure("2") do |config|
     apt-get update
     apt-get upgrade
     apt-get install -y ubuntu-desktop-minimal kdiff3
-    snap install chromium
+    apt-get remove firefox
     snap install code --classic
+
+    chrome=google-chrome-stable_current_amd64.deb
+    wget https://dl.google.com/linux/direct/$chrome
+    dpkg -i $chrome
+    rm $chrome
   SHELL
 
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
