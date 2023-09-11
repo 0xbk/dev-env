@@ -26,7 +26,7 @@ Vagrant.configure("2") do |config|
     apt-get update
     apt-get upgrade
     apt-get install -y ubuntu-desktop-minimal kdiff3
-    apt-get remove firefox
+    apt-get remove -y firefox
     snap install code --classic
 
     chrome=google-chrome-stable_current_amd64.deb
