@@ -131,11 +131,11 @@ jobs:
       #       https://app.vagrantup.com/api/v1/box/$VAGRANT_CLOUD_USER/$VAGRANT_BOX_NAME/version/$VAGRANT_BOX_VERSION/release
       #   if: github.event_name != 'pull_request'
 
-      # - name: Create tag
-      #   run: |
-      #     git tag ${{ env.VERSION_TAG }}
-      #     git push origin ${{ env.VERSION_TAG }}
-      #   if: github.event_name != 'pull_request'
+      - name: Create tag
+        run: |
+          git tag ${{ env.VERSION_TAG }}
+          git push origin ${{ env.VERSION_TAG }}
+        # if: github.event_name != 'pull_request'
 
       - name: Build changelog
         id: build_changelog
