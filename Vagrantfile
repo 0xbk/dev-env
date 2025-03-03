@@ -1,5 +1,7 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/lunar64"
+  config.vm.box = "bento/ubuntu-24.04"
+  config.vm.box_architecture = "amd64"
+  config.vm.box_version = "202502.21.0"
   config.vm.define "dev-env"
   config.vm.synced_folder "./shared", "/vagrant", create: true
   config.ssh.insert_key = false
@@ -23,10 +25,11 @@ Vagrant.configure("2") do |config|
     chown -R vagrant:vagrant $sshDir
 
     # Install software & packages
+    apt-get remove -y firefox
     apt-get update
     apt-get upgrade
-    apt-get install -y ubuntu-desktop-minimal kdiff3
-    apt-get remove -y firefox
+    apt-get install -y kdiff3 ubuntu-desktop-minimal
+    apt-get autoremove
     snap install code --classic
 
     chrome=google-chrome-stable_current_amd64.deb
@@ -37,9 +40,9 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     # Install nvm & node
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
     . ~/.nvm/nvm.sh
-    node_version=20.5.1
+    node_version=22.14.0
     nvm install $node_version
     nvm alias default $node_version
   SHELL
