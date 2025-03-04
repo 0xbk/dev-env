@@ -16,9 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install guest additions plugin
-        run: vagrant plugin install vagrant-vbguest
-
       - name: Create virtual machine
         run: vagrant up
 
